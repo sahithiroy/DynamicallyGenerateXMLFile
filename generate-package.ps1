@@ -1,32 +1,39 @@
-# Step 1: Get changed metadata files
-$files = git diff --name-only origin/main...HEAD | `
-    Select-String -Pattern '\.cls$|\.trigger$|\.page$|\.component$|\.object$'
+# Step 1: Get changed metadata files including LWC
+$files = git diff --name-only HEAD~1 HEAD | `
+    Select-String -Pattern '\.cls$|\.trigger$|\.page$|\.component$|\.object$|lwc\/[^\/]+\/'
 
 # Step 2: Create a hashtable to hold metadata components
 $components = @{}
 
 foreach ($file in $files) {
-    $filename = [System.IO.Path]::GetFileNameWithoutExtension($file.ToString())
-    $extension = [System.IO.Path]::GetExtension($file.ToString()).TrimStart('.')
+    $path = $file.ToString()
 
-    # Step 3: Match to Salesforce metadata types
-    switch ($extension) {
-        'cls'       { $type = 'ApexClass' }
-        'trigger'   { $type = 'ApexTrigger' }
-        'page'      { $type = 'ApexPage' }
-        'component' { $type = 'ApexComponent' }
-        'object'    { $type = 'CustomObject' }
-        default     { continue }
+    # Handle LWC folders separately
+    if ($path -match 'lwc\/([^\/]+)\/') {
+        $type = 'LightningComponentBundle'
+        $filename = $matches[1]
+    }
+    else {
+        $filename = [System.IO.Path]::GetFileNameWithoutExtension($path)
+        $extension = [System.IO.Path]::GetExtension($path).TrimStart('.')
+
+        switch ($extension) {
+            'cls'       { $type = 'ApexClass' }
+            'trigger'   { $type = 'ApexTrigger' }
+            'page'      { $type = 'ApexPage' }
+            'component' { $type = 'ApexComponent' }
+            'object'    { $type = 'CustomObject' }
+            default     { continue }
+        }
     }
 
-    # Step 4: Add to metadata map
     if (-not $components.ContainsKey($type)) {
         $components[$type] = @()
     }
     $components[$type] += $filename
 }
 
-# Step 5: Write XML file
+# Step 3: Build and save package.xml
 $xml = @()
 $xml += '<?xml version="1.0" encoding="UTF-8"?>'
 $xml += '<Package xmlns="http://soap.sforce.com/2006/04/metadata">'
@@ -45,6 +52,5 @@ $xml += '</Package>'
 
 # Save the file
 $xml | Set-Content -Path ".\package.xml" -Encoding UTF8
-
-Write-Host "`n✅ package.xml created in current folder."
+Write-Host "`n✅ package.xml created including LWC components."
 
