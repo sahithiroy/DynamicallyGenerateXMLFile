@@ -1,0 +1,12 @@
+<template>
+    <lightning-card title="Create Contact">
+        <div class="slds-p-around_medium">
+            <lightning-record-form
+                object-api-name="Contact"
+                fields={fields}
+                mode="edit"
+                onsuccess={handleSuccess}>
+            </lightning-record-form>
+        </div>
+    </lightning-card>
+</template>
