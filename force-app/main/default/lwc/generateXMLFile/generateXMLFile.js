@@ -1,3 +1,5 @@
-import { LightningElement } from 'lwc';
+import { LightningElement,api } from 'lwc';
 
-export default class GenerateXMLFile extends LightningElement {}
+export default class GenerateXMLFile extends LightningElement {
+    @api recordId;
+}
